@@ -1,0 +1,8 @@
+[
+  {"name": "Llama-3.1-8B", "params_b": 8.03, "n_layers": 32, "n_kv_heads": 8, "head_dim": 128, "weights_precision": "bf16", "kv_precision": "bf16"},
+  {"name": "Qwen3-32B", "params_b": 32.8, "n_layers": 64, "n_kv_heads": 8, "head_dim": 128, "weights_precision": "bf16", "kv_precision": "bf16"},
+  {"name": "Llama-3.3-70B", "params_b": 70.6, "n_layers": 80, "n_kv_heads": 8, "head_dim": 128, "weights_precision": "bf16", "kv_precision": "bf16"},
+  {"name": "GPT-3-175B", "params_b": 175, "n_layers": 96, "n_kv_heads": 96, "head_dim": 128, "weights_precision": "fp16", "kv_precision": "fp16"},
+  {"name": "Qwen3-235B-A22B", "params_b": 235, "active_params_b": 22, "n_layers": 94, "n_kv_heads": 4, "head_dim": 128, "weights_precision": "bf16", "kv_precision": "bf16"},
+  {"name": "DeepSeek-V4-Flash", "params_b": 284, "active_params_b": 13, "n_layers": 43, "n_kv_heads": 1, "head_dim": 512, "kv_tensors": 1, "weights_precision": "fp8", "kv_precision": "bf16"}
+]

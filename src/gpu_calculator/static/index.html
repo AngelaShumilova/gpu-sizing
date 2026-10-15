@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPU калькулятор</title>
+<style>
+  :root { --bg: #f6f7f5; --card: #fff; --ink: #1c2522; --muted: #5c6b64; --rule: #dce2dc; --accent: #0b7a5c; --bad: #a32e22; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1512; --card: #151c18; --ink: #dce6e0; --muted: #8ca095; --rule: #263029; --accent: #43c795; --bad: #e58a7b; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, sans-serif; }
+  main { max-width: 52rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .3rem; }
+  p.sub { color: var(--muted); margin: 0 0 1.5rem; }
+  form { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .8rem 1rem;
+         background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 1rem; }
+  label { display: flex; flex-direction: column; gap: .25rem; font-size: .82rem; color: var(--muted); }
+  input, select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; padding: .45rem .55rem; }
+  button { grid-column: 1 / -1; font: inherit; font-weight: 600; color: #fff; background: var(--accent); border: 0; border-radius: 6px; padding: .6rem; cursor: pointer; }
+  #out { margin-top: 1.2rem; }
+  .verdict { font-size: 1.25rem; font-weight: 650; margin: 0 0 .6rem; }
+  .warn { color: var(--bad); }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+  td { padding: .5rem .8rem; border-bottom: 1px solid var(--rule); }
+  td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  .hint { color: var(--muted); font-size: .82rem; margin-top: .8rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>GPU калькулятор</h1>
+  <p class="sub">Сколько видеокарт нужно для LLM и как быстро она будет работать. Первое приближение: 100% эффективность GPU.</p>
+
+  <form id="f">
+    <label>Модель <select name="model" id="model"></select></label>
+    <label>GPU <select name="gpu" id="gpu"></select></label>
+    <label>Формат весов
+      <select name="precision">
+        <option value="">как в справочнике</option>
+        <option>fp32</option><option>bf16</option><option>fp16</option><option>fp8</option><option>int8</option><option>fp6</option><option>fp4</option><option>nf4</option><option>int4</option><option>int2</option>
+      </select>
+    </label>
+    <label>Токенов в промпте <input name="prompt_tokens" type="number" min="1" value="2000"></label>
+    <label>Токенов в ответе <input name="response_tokens" type="number" min="0" value="500"></label>
+    <label>Токенов рассуждений <input name="reasoning_tokens" type="number" min="0" value="0"></label>
+    <label>Одновременных запросов <input name="concurrent_requests" type="number" min="1" value="16"></label>
+    <label>Запас фреймворка <input name="overhead" type="number" min="1" step="0.05" value="1.3"></label>
+    <button>Посчитать</button>
+  </form>
+
+  <div id="out"></div>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+  const fmt = (x, d = 1) => Number(x).toLocaleString("ru-RU", { maximumFractionDigits: d, minimumFractionDigits: d });
+
+  async function fill(id, url) {
+    const items = await (await fetch(url)).json();
+    $(id).innerHTML = items.map((i) => `<option value="${esc(i.name)}">${esc(i.name)}</option>`).join("");
+  }
+
+  async function calc(e) {
+    e?.preventDefault();
+    const body = Object.fromEntries(new FormData($("f")));
+    for (const k of ["prompt_tokens", "response_tokens", "reasoning_tokens", "concurrent_requests"]) body[k] = Number(body[k]);
+    body.overhead = Number(body.overhead);
+    body.precision = body.precision || null;
+
+    const res = await fetch("/api/recommend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) { $("out").innerHTML = `<p class="verdict warn">${JSON.stringify(data.detail)}</p>`; return; }
+    const r = data.result;
+
+    const rows = [
+      ["Веса", `${fmt(r.weights_gb)} GB`],
+      ["KV-кэш", `${fmt(r.kv_cache_gb)} GB`],
+      ["(Веса + KV-кэш) × запас", `${fmt(r.memory_gb)} GB`],
+      ["TTFT — время до первого токена", `${fmt(r.ttft_s, 2)} s`],
+      ["TPOT — время на токен", `${fmt(r.tpot_ms)} ms`],
+      ["E2E — время всего запроса", `${fmt(r.e2e_s)} s`],
+    ];
+    $("out").innerHTML = `
+      <p class="verdict">${r.gpus} × ${esc(body.gpu)}</p>
+      <table>${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("")}</table>
+      <p class="hint">Несколько GPU считаются одним пулом: память, скорость чтения и вычисления складываются. Формулы — в analytical-minimum/README.md.</p>`;
+  }
+
+  $("f").addEventListener("submit", calc);
+  Promise.all([fill("model", "/api/models"), fill("gpu", "/api/gpus")]).then(() => calc());
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+[
+  {"name": "A100 80GB", "memory_gb": 80, "bandwidth_gbs": 2039, "tflops_fp16": 312, "tflops_fp8": null},
+  {"name": "L40S", "memory_gb": 48, "bandwidth_gbs": 864, "tflops_fp16": 362, "tflops_fp8": 733},
+  {"name": "H100", "memory_gb": 80, "bandwidth_gbs": 3350, "tflops_fp16": 989.4, "tflops_fp8": 1978.9},
+  {"name": "H200", "memory_gb": 141, "bandwidth_gbs": 4800, "tflops_fp16": 989.4, "tflops_fp8": 1978.9},
+  {"name": "B200", "memory_gb": 180, "bandwidth_gbs": 8000, "tflops_fp16": 2250, "tflops_fp8": 4500},
+  {"name": "MI300X", "memory_gb": 192, "bandwidth_gbs": 5300, "tflops_fp16": 1307.4, "tflops_fp8": 2614.9}
+]
