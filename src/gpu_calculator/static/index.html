@@ -72,8 +72,14 @@
 
     const res = await fetch("/api/recommend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json();
-    if (!res.ok) { $("out").innerHTML = `<p class="verdict warn">${JSON.stringify(data.detail)}</p>`; return; }
-    const r = data.result;
+    if (!res.ok) {
+      const p = document.createElement("p");
+      p.className = "verdict warn";
+      p.textContent = JSON.stringify(data.detail);
+      $("out").replaceChildren(p);
+      return;
+    }
+    const r = data;
 
     const rows = [
       ["Веса", `${fmt(r.weights_gb)} GB`],
