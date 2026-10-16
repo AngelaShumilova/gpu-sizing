@@ -20,10 +20,8 @@ literature/            источники по блокам доклада
 
 ## Быстрый старт
 
-Нужен [uv](https://docs.astral.sh/uv/):
-
 ```bash
-cd calculator && uv sync && uv run fastapi dev src/gpu_calculator/api.py
+uv sync && uv run fastapi dev src/gpu_calculator/api.py
 ```
 
 Страница откроется на http://127.0.0.1:8000
